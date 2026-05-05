@@ -30,17 +30,32 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
 
+QUESTIONS = [
+    ("Ibukota Jepang?", "tokyo"),
+    ("Planet terbesar?", "jupiter"),
+    ("5*5=?", "25"),
+    ("Siapa penemu lampu? (nama lengkap)", "thomas alva edison"),
+    ("Sungai terpanjang di dunia?", "sungai nil")
+]
+
 class SnakesAndLadders:
     def __init__(self):
-        self.player_pos = 1
+        self.players = [1, 1]
+        self.current_player = 0
         self.animation_pos = 1
         self.target_pos = 1
+        self.question_active = False
+        self.current_question = None
+        self.correct_answer = ""
+        self.user_answer = ""
 
         self.turns = 0
         self.state = "idle"   # idle, rolling, moving
         self.roll_timer = 0
         self.dice_roll = 1
 
+        self.extra_turn = False
+        self.extra_roll = False
         self.game_over = False
 
         self.ladders = {4: 14, 9: 31, 21: 42, 28: 84, 72: 91}
@@ -138,6 +153,23 @@ class SnakesAndLadders:
             for dot in dots[roll]:
                 pygame.draw.circle(screen, BLACK, dot, 6)
 
+    def check_answer(self):
+        if self.user_answer.lower() == self.correct_answer:
+            # BENAR → boleh roll lagi
+            self.extra_roll = True
+        else:
+            # SALAH → mundur
+            penalty = random.randint(1, 6)
+            self.players[self.current_player] = max(1, self.players[self.current_player] - penalty)
+
+            # ganti player
+            self.current_player = 1 - self.current_player
+            self.extra_roll = False
+
+        self.state = "idle"
+        self.question_active = False
+        self.user_answer = ""
+
     def draw(self):
         print("DRAWING FRAME")
         screen.fill(DARK_GREEN)
@@ -145,9 +177,13 @@ class SnakesAndLadders:
         self.draw_board()
 
         # Draw player
-        px, py = self.get_position_coords(self.animation_pos)
-        pygame.draw.circle(screen, YELLOW, (int(px), int(py)), 20)
-        pygame.draw.circle(screen, ORANGE, (int(px), int(py)), 20, 4)
+        for i, pos in enumerate(self.players):
+            x, y = self.get_position_coords(pos)
+            if i == 0:
+                color = YELLOW 
+            else: 
+                color = BLUE
+            pygame.draw.circle(screen, color, (int(x), int(y)), 15)
 
         # Draw dice
         # 🎯 Only show UI when not moving
@@ -172,10 +208,25 @@ class SnakesAndLadders:
             screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, box_y + 40))
             screen.blit(turns_text, (SCREEN_WIDTH//2 - turns_text.get_width()//2, box_y + 90))
             screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, box_y + 130))
+        
+        if self.question_active:
+            box_x = SCREEN_WIDTH // 2 - 200
+            box_y = 200
+            box_w = 400
+            box_h = 200
+
+            pygame.draw.rect(screen, (20,20,20), (box_x, box_y, box_w, box_h), border_radius=15)
+            pygame.draw.rect(screen, WHITE, (box_x, box_y, box_w, box_h), 3, border_radius=15)
+
+            q_text = small_font.render(self.current_question, True, WHITE)
+            a_text = small_font.render(self.user_answer, True, YELLOW)
+
+            screen.blit(q_text, (box_x + 20, box_y + 40))
+            screen.blit(a_text, (box_x + 20, box_y + 100))
 
 
         # 🎲 NORMAL UI (only when not moving AND not game over)
-        elif self.state != "moving":
+        elif self.state != "moving" and not self.question_active:
 
             box_x = SCREEN_WIDTH // 2 - 140
             box_y = 380
@@ -195,7 +246,7 @@ class SnakesAndLadders:
             # Text
             instr1 = font.render("Click to Roll", True, WHITE)
             instr2 = small_font.render(
-                f"Turn: {self.turns}   Pos: {self.player_pos}", True, WHITE
+                f"Turn: {self.turns} P{self.current_player+1}:{self.players[self.current_player]}", True, WHITE
             )
 
             screen.blit(instr1, (SCREEN_WIDTH//2 - instr1.get_width()//2, box_y + 110))
@@ -213,12 +264,12 @@ class SnakesAndLadders:
 
             if self.roll_timer <= 0:
                 self.dice_roll = self.roll_dice()
-                self.target_pos = self.player_pos + self.dice_roll
+                self.target_pos = self.players[self.current_player] + self.dice_roll
 
                 if self.target_pos > 100:
-                    self.target_pos = self.player_pos
+                    self.target_pos = self.players[self.current_player]
 
-                self.animation_pos = self.player_pos
+                self.animation_pos = self.players[self.current_player]
                 self.state = "moving"
 
         # 🚶 Moving phase
@@ -233,17 +284,34 @@ class SnakesAndLadders:
                 elif self.animation_pos in self.snakes:
                     self.animation_pos = self.snakes[self.animation_pos]
 
-                self.player_pos = self.animation_pos
-                self.turns += 1
+                self.players[self.current_player] = self.animation_pos
 
-                if self.player_pos == 100:
+            # kalau tadi dapat bonus → roll lagi TANPA soal
+                if self.extra_roll:
+                    self.extra_roll = False
+                    self.state = "idle"
+
+                    # 👉 ganti player SETELAH bonus roll nanti selesai
+                    self.current_player = 1 - self.current_player
+
+                else:
+                    # normal → muncul soal
+                    self.question_active = True
+                    self.current_question, self.correct_answer = random.choice(QUESTIONS)
+                    self.turns += 1
+
+                if self.players[self.current_player] == 100:
                     self.game_over = True
 
+                self.extra_turn = False
                 self.state = "idle"
 
     def handle_click(self, pos):
         if self.game_over:
             self.__init__()
+            return
+        
+        if self.question_active:
             return
 
         x, y = pos
@@ -267,6 +335,14 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 game.handle_click(event.pos)
+            elif event.type == pygame.KEYDOWN:
+                if game.question_active:
+                    if event.key == pygame.K_RETURN:
+                        game.check_answer()
+                    elif event.key ==pygame.K_BACKSPACE:
+                        game.user_answer = game.user_answer[:-1]
+                    else:
+                        game.user_answer += event.unicode
         
         game.update()
         game.draw()
