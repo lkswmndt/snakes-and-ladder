@@ -151,41 +151,55 @@ class SnakesAndLadders:
 
         # Draw dice
         # 🎯 Only show UI when not moving
-        if self.state != "moving":
-            # 🎲 Dice box
-            box_x = SCREEN_WIDTH // 2 - 100
-            box_y = 400
-            box_w = 200
-            box_h = 150
+        # 🎯 GAME OVER SCREEN
+        if self.game_over:
+            box_x = SCREEN_WIDTH // 2 - 180
+            box_y = 250
+            box_w = 360
+            box_h = 200
 
-            pygame.draw.rect(screen, (240, 240, 240), (box_x, box_y, box_w, box_h), border_radius=12)
-            pygame.draw.rect(screen, BLACK, (box_x, box_y, box_w, box_h), 3, border_radius=12)
+            # Box
+            pygame.draw.rect(screen, (30, 30, 30), (box_x, box_y, box_w, box_h), border_radius=15)
+            pygame.draw.rect(screen, YELLOW, (box_x, box_y, box_w, box_h), 4, border_radius=15)
 
-            # 🎲 Dice
+            # Text
+            win_text = font.render("YOU WON!", True, YELLOW)
+            turns_text = small_font.render(
+                f"Completed in {self.turns} turns!", True, WHITE
+            )
+            restart_text = small_font.render("Click anywhere to restart", True, WHITE)
+
+            screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, box_y + 40))
+            screen.blit(turns_text, (SCREEN_WIDTH//2 - turns_text.get_width()//2, box_y + 90))
+            screen.blit(restart_text, (SCREEN_WIDTH//2 - restart_text.get_width()//2, box_y + 130))
+
+
+        # 🎲 NORMAL UI (only when not moving AND not game over)
+        elif self.state != "moving":
+
+            box_x = SCREEN_WIDTH // 2 - 140
+            box_y = 380
+            box_w = 280
+            box_h = 180
+
+            pygame.draw.rect(screen, (30, 30, 30), (box_x, box_y, box_w, box_h), border_radius=15)
+            pygame.draw.rect(screen, WHITE, (box_x, box_y, box_w, box_h), 3, border_radius=15)
+
+            # Dice
             self.draw_dice(
                 SCREEN_WIDTH // 2,
-                box_y + box_h // 2 - 10,
+                box_y + 70,
                 self.dice_roll if self.state != "rolling" else None
             )
 
-            # 📝 Text
-            if not self.game_over:
-                instr1 = font.render("Click the dice to roll!", True, WHITE)
-                instr2 = small_font.render(
-                    f"Turn: {self.turns} | Position: {self.player_pos}", True, WHITE
-                )
+            # Text
+            instr1 = font.render("Click to Roll", True, WHITE)
+            instr2 = small_font.render(
+                f"Turn: {self.turns}   Pos: {self.player_pos}", True, WHITE
+            )
 
-                screen.blit(instr1, (SCREEN_WIDTH//2 - instr1.get_width()//2, 550))
-                screen.blit(instr2, (SCREEN_WIDTH//2 - instr2.get_width()//2, 600))
-
-            else:
-                win_text = font.render("🎉 YOU WON! 🎉", True, YELLOW)
-                turns_text = small_font.render(
-                    f"Completed in {self.turns} turns!", True, WHITE
-                )
-
-                screen.blit(win_text, (SCREEN_WIDTH//2 - win_text.get_width()//2, 300))
-                screen.blit(turns_text, (SCREEN_WIDTH//2 - turns_text.get_width()//2, 350))
+            screen.blit(instr1, (SCREEN_WIDTH//2 - instr1.get_width()//2, box_y + 110))
+            screen.blit(instr2, (SCREEN_WIDTH//2 - instr2.get_width()//2, box_y + 140))
 
         pygame.display.flip()
 
@@ -235,7 +249,12 @@ class SnakesAndLadders:
         x, y = pos
 
         # Click dice
-        if abs(x - SCREEN_WIDTH//2) < 80 and abs(y - 450) < 80:
+        box_x = SCREEN_WIDTH // 2 - 140
+        box_y = 380
+        box_w = 280
+        box_h = 180
+
+        if (box_x < x < box_x + box_w and box_y < y < box_y + box_h):
             self.start_roll()
 
 def main():
