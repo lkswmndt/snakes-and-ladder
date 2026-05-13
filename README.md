@@ -25,18 +25,10 @@ Game ini dibuat untuk melatih:
 
 ---
 
-## Teknologi yang Digunakan
-- Python
-- Pygame
-- PyInstaller
-
----
-
-## Cara Menjalankan Game
-
-### Menggunakan Python
-1. Install Python
-2. Install library pygame:
-
-```bash
-pip install pygame
+## Nama Kelompok:
+- Hibban Azmi (21)
+- Hibrizi Maulana Ramadhani (22)
+- Najwa Bilqis Bilbina Mukti ( 27 )
+- Shabrina Najwa Azzahra ( 30 )
+- Zahra Wa'ani Rizki Nugraha ( 33 )
+- Zayyin Amira Anisa Aulia ( 34 )
